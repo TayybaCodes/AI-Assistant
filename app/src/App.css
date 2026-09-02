@@ -1,0 +1,31 @@
+/* Reset & Background */
+body {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #f0f9ff 100%) !important;
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Card Styling */
+.chat-card {
+  max-width: 400px;
+  height: 85vh;
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Voice Orb */
+.voice-orb {
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(186, 230, 254, 0.1) 70%);
+  border: 2px solid rgba(56, 189, 248, 0.4);
+}
+
+/* Input reset */
+input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
