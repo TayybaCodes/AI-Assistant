@@ -275,7 +275,7 @@ export function App() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/chat",
+        "/api/chat",
         {
           method: "POST",
 
@@ -404,7 +404,7 @@ export function App() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/chat",
+        "/api/chat",
         {
           method: "POST",
 
