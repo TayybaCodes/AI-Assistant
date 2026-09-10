@@ -167,7 +167,6 @@ Do not make up information when you are unsure.
           thinkingConfig: {
             thinkingLevel: "minimal",
           },
-          maxOutputTokens: 300,
         },
 
         contents: [
