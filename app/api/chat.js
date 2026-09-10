@@ -165,8 +165,9 @@ Do not make up information when you are unsure.
 
         generationConfig: {
           thinkingConfig: {
-            thinkingLevel: "low",
+            thinkingLevel: "minimal",
           },
+          maxOutputTokens: 300,
         },
 
         contents: [
