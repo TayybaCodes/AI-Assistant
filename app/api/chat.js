@@ -11,6 +11,10 @@ export default {
       const { message, image, mimeType } =
         await request.json();
 
+      // ===============================
+      // CHECK MESSAGE / IMAGE
+      // ===============================
+
       if (!message?.trim() && !image) {
         return Response.json(
           {
@@ -20,6 +24,10 @@ export default {
           { status: 400 }
         );
       }
+
+      // ===============================
+      // GET GEMINI API KEY
+      // ===============================
 
       const apiKey = (
         process.env.GEMINI_API_KEY ||
@@ -39,10 +47,18 @@ export default {
         );
       }
 
+      // ===============================
+      // GEMINI MODEL
+      // ===============================
+
       const model = "gemini-3.8-flash";
 
       const url =
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+      // ===============================
+      // SYSTEM INSTRUCTION
+      // ===============================
 
       const systemInstruction = `
 You are an AI assistant created by Tayyba Maryam.
@@ -61,6 +77,7 @@ For programming questions:
 - Explain the solution clearly.
 - Put programming code inside Markdown code blocks.
 - Always specify the programming language.
+- Do not put programming code in normal paragraphs.
 
 For study questions:
 - Explain concepts simply.
@@ -76,7 +93,15 @@ If the user sends an image:
 Do not make up information when you are unsure.
 `.trim();
 
+      // ===============================
+      // CREATE CONTENT PARTS
+      // ===============================
+
       const parts = [];
+
+      // ===============================
+      // ADD IMAGE
+      // ===============================
 
       if (image) {
         const commaIndex = image.indexOf(",");
@@ -93,10 +118,18 @@ Do not make up information when you are unsure.
           commaIndex >= 0 &&
           image.startsWith("data:")
         ) {
-          detectedMimeType =
-            image
-              .substring(5, image.indexOf(";"))
-              .trim() || detectedMimeType;
+          const semicolonIndex =
+            image.indexOf(";");
+
+          if (semicolonIndex > 5) {
+            detectedMimeType =
+              image
+                .substring(
+                  5,
+                  semicolonIndex
+                )
+                .trim() || detectedMimeType;
+          }
         }
 
         parts.push({
@@ -107,59 +140,117 @@ Do not make up information when you are unsure.
         });
       }
 
+      // ===============================
+      // ADD USER MESSAGE
+      // ===============================
+
       parts.push({
         text:
           message?.trim() ||
           "Please analyze this image and describe what you can see.",
       });
 
-      const response = await fetch(url, {
-        method: "POST",
+      // ===============================
+      // REQUEST BODY
+      // ===============================
 
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [
-              {
-                text: systemInstruction,
-              },
-            ],
-          },
-         generationConfig: {
-  thinkingConfig: {
-    thinkingLevel: "low"
-  }
-},
-          contents: [
+      const requestBody = {
+        system_instruction: {
+          parts: [
             {
-              role: "user",
-              parts,
+              text: systemInstruction,
             },
           ],
-        }),
-      });
+        },
 
-      const data = await response.json();
+        generationConfig: {
+          thinkingConfig: {
+            thinkingLevel: "low",
+          },
+        },
 
-      if (!response.ok) {
+        contents: [
+          {
+            role: "user",
+            parts,
+          },
+        ],
+      };
+
+      // ===============================
+      // GEMINI REQUEST + RETRY
+      // ===============================
+
+      let response;
+      let data;
+
+      const maxAttempts = 2;
+
+      for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt++
+      ) {
+        response = await fetch(url, {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+
+          body: JSON.stringify(requestBody),
+        });
+
+        data = await response.json();
+
+        // Successful response
+        if (response.ok) {
+          break;
+        }
+
         console.error(
-          "Gemini API error:",
+          `Gemini attempt ${attempt} failed:`,
           JSON.stringify(data, null, 2)
         );
 
+        // Retry only temporary errors
+        const retryable =
+          response.status === 408 ||
+          response.status === 429 ||
+          response.status >= 500;
+
+        if (
+          !retryable ||
+          attempt === maxAttempts
+        ) {
+          break;
+        }
+
+        // Wait 1 second before retry
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000)
+        );
+      }
+
+      // ===============================
+      // ERROR HANDLING
+      // ===============================
+
+      if (!response.ok) {
         return Response.json(
           {
             reply:
-              data.error?.message ||
+              data?.error?.message ||
               `Gemini API request failed with status ${response.status}`,
           },
           { status: response.status }
         );
       }
+
+      // ===============================
+      // GET AI RESPONSE
+      // ===============================
 
       const reply =
         data.candidates?.[0]?.content?.parts
@@ -168,7 +259,14 @@ Do not make up information when you are unsure.
           .trim() ||
         "No response generated.";
 
-      return Response.json({ reply });
+      // ===============================
+      // SEND RESPONSE
+      // ===============================
+
+      return Response.json({
+        reply,
+      });
+
     } catch (error) {
       console.error(
         "Server error:",
