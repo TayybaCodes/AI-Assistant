@@ -178,66 +178,32 @@ Do not make up information when you are unsure.
       };
 
       // ===============================
-      // GEMINI REQUEST + RETRY
+      // GEMINI REQUEST
       // ===============================
 
-      let response;
-      let data;
+      const response = await fetch(url, {
+        method: "POST",
 
-      const maxAttempts = 2;
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
 
-      for (
-        let attempt = 1;
-        attempt <= maxAttempts;
-        attempt++
-      ) {
-        response = await fetch(url, {
-          method: "POST",
+        body: JSON.stringify(requestBody),
+      });
 
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey,
-          },
-
-          body: JSON.stringify(requestBody),
-        });
-
-        data = await response.json();
-
-        // Successful response
-        if (response.ok) {
-          break;
-        }
-
-        console.error(
-          `Gemini attempt ${attempt} failed:`,
-          JSON.stringify(data, null, 2)
-        );
-
-        // Retry only temporary errors
-        const retryable =
-          response.status === 408 ||
-          response.status === 429 ||
-          response.status >= 500;
-
-        if (
-          !retryable ||
-          attempt === maxAttempts
-        ) {
-          break;
-        }
-
-        // Wait 1 second before retry
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1000)
-        );
-      }
+      const data = await response.json();
 
       // ===============================
       // ERROR HANDLING
       // ===============================
 
       if (!response.ok) {
+        console.error(
+          "Gemini API error:",
+          JSON.stringify(data, null, 2)
+        );
+
         return Response.json(
           {
             reply:
