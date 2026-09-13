@@ -29,7 +29,9 @@ export function App() {
 
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const voiceTextRef = useRef("");
   const abortControllerRef = useRef(null);
+
 
   /* =========================
      SAVE SETTINGS & HISTORY
@@ -125,6 +127,7 @@ export function App() {
       }
 
       setInput(transcript);
+      voiceTextRef.current = transcript;
     };
 
     recognition.onerror = (event) => {
@@ -144,6 +147,12 @@ export function App() {
 
     recognition.onend = () => {
       setListening(false);
+      const voiceText = voiceTextRef.current.trim();
+
+      if (voiceText && !loading) {
+        voiceTextRef.current = "";
+        sendMessage(voiceText);
+      }
     };
 
     recognitionRef.current = recognition;
@@ -225,7 +234,7 @@ export function App() {
      SEND MESSAGE
   ========================= */
 
-  const sendMessage = async () => {
+  const sendMessage = async (voiceText = null) => {
     if (loading) return;
 
     if (
@@ -235,7 +244,9 @@ export function App() {
       return;
     }
 
-    const text = input.trim();
+    const text = 
+    voiceText !== null ? voiceText.trim():
+    input.trim();
 
     const imageToSend =
       selectedImage?.data || null;
