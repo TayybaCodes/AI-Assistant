@@ -87,81 +87,76 @@ export function App() {
      VOICE INPUT
   ========================= */
 
-  const startVoice = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      alert(
-        "Voice input is not supported in this browser. Please use Google Chrome."
-      );
-      return;
-    }
+const startVoice = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
-    if (listening) {
-      recognitionRef.current?.stop();
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-
-    recognition.lang = "en-US";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setListening(true);
-    };
-     recognition.onresult = (event) => {
-  const transcript =
-    event.results[0][0].transcript.trim();
-
-  if (transcript) {
-    setInput(transcript);
-    voiceTextRef.current = transcript;
+  if (!SpeechRecognition) {
+    alert(
+      "Voice input is not supported in this browser. Please use Google Chrome."
+    );
+    return;
   }
 
-     
+  if (listening) {
+    recognitionRef.current?.stop();
+    return;
+  }
 
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-US";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  voiceTextRef.current = "";
+
+  recognition.onstart = () => {
+    setListening(true);
+  };
+
+  recognition.onresult = (event) => {
+    const transcript =
+      event.results[event.results.length - 1][0].transcript.trim();
+
+    if (transcript) {
       setInput(transcript);
       voiceTextRef.current = transcript;
-    };
 
-    recognition.onerror = (event) => {
-      console.error(
-        "Voice error:",
-        event.error
-      );
+      // Automatically send the voice message
+      sendMessage(transcript);
 
-      setListening(false);
-
-      if (event.error === "not-allowed") {
-        alert(
-          "Microphone permission denied. Please allow microphone access."
-        );
-      }
-    };
-
-    recognition.onend = () => {
-      setListening(false);
-      const voiceText = voiceTextRef.current.trim();
-
-      if (voiceText && !loading) {
-        voiceTextRef.current = "";
-        sendMessage(voiceText);
-      }
-    };
-
-    recognitionRef.current = recognition;
-
-    try {
-      recognition.start();
-    } catch (error) {
-      console.error(error);
-      setListening(false);
+      voiceTextRef.current = "";
     }
   };
+
+  recognition.onerror = (event) => {
+    console.error("Voice error:", event.error);
+
+    setListening(false);
+
+    if (event.error === "not-allowed") {
+      alert(
+        "Microphone permission denied. Please allow microphone access."
+      );
+    }
+  };
+
+  recognition.onend = () => {
+    setListening(false);
+  };
+
+  recognitionRef.current = recognition;
+
+  try {
+    recognition.start();
+  } catch (error) {
+    console.error("Voice start error:", error);
+    setListening(false);
+  }
+};
 
   /* =========================
      COPY RESPONSE
