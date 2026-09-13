@@ -586,7 +586,7 @@ const sendMessage = async (voiceText = null) => {
       !event.shiftKey
     ) {
       event.preventDefault();
-      sendMessage();
+      sendMessage(input);
     }
   };
 
@@ -1152,7 +1152,7 @@ const sendMessage = async (voiceText = null) => {
 
           <button
             className="send-button"
-            onClick={sendMessage}
+            onClick={ () => sendMessage(input)}
             disabled={
               loading ||
               (!input.trim() &&
