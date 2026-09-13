@@ -227,137 +227,133 @@ const startVoice = () => {
      SEND MESSAGE
   ========================= */
 
-  const sendMessage = async (voiceText = null) => {
-    if (loading) return;
 
-    if (
-      !input.trim() &&
-      !selectedImage
-    ) {
-      return;
+const sendMessage = async (voiceText = null) => {
+  if (loading) return;
+
+  const text =
+    voiceText !== null
+      ? voiceText.trim()
+      : input.trim();
+
+  const imageToSend =
+    selectedImage?.data || null;
+
+  if (!text && !imageToSend) {
+    return;
+  }
+
+  const userMessage = {
+    sender: "user",
+    text: text || "Image",
+    image: imageToSend,
+  };
+
+  let chatId = activeChatId;
+
+  if (!chatId) {
+    chatId = Date.now().toString();
+    setActiveChatId(chatId);
+  }
+
+  const updatedMessages = [
+    ...messages,
+    userMessage,
+  ];
+
+  setMessages(updatedMessages);
+
+  saveChat(
+    chatId,
+    updatedMessages,
+    text || "Image chat"
+  );
+
+  setInput("");
+  setLoading(true);
+  removeImage();
+
+  abortControllerRef.current =
+    new AbortController();
+
+  try {
+    const response = await fetch(
+      "/api/chat",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: text,
+          image: imageToSend,
+        }),
+        signal:
+          abortControllerRef.current.signal,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.reply ||
+          data.error ||
+          "Server error"
+      );
     }
 
-    const text = 
-    voiceText !== null ? voiceText.trim():
-    input.trim();
-
-    const imageToSend =
-      selectedImage?.data || null;
-
-    const userMessage = {
-      sender: "user",
-      text: text || "Image",
-      image: imageToSend,
+    const botMessage = {
+      sender: "bot",
+      text:
+        data.reply ||
+        "No response generated.",
     };
 
-    let chatId = activeChatId;
-
-    if (!chatId) {
-      chatId = Date.now().toString();
-      setActiveChatId(chatId);
-    }
-
-    const updatedMessages = [
-      ...messages,
-      userMessage,
+    const finalMessages = [
+      ...updatedMessages,
+      botMessage,
     ];
 
-    setMessages(updatedMessages);
+    setMessages(finalMessages);
 
     saveChat(
       chatId,
-      updatedMessages,
+      finalMessages,
       text || "Image chat"
     );
 
-    setInput("");
-    setLoading(true);
-    removeImage();
+  } catch (error) {
+    console.error(error);
 
-    abortControllerRef.current =
-      new AbortController();
+    const errorMessage = {
+      sender: "bot",
+      text:
+        error.name === "AbortError"
+          ? "Generation stopped."
+          : `Sorry, I couldn't connect to the server.\n${error.message}`,
+    };
 
-    try {
-      const response = await fetch(
-        "/api/chat",
-        {
-          method: "POST",
+    const finalMessages = [
+      ...updatedMessages,
+      errorMessage,
+    ];
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+    setMessages(finalMessages);
 
-          body: JSON.stringify({
-            message: text,
-            image: imageToSend,
-          }),
+    saveChat(
+      chatId,
+      finalMessages,
+      text || "Image chat"
+    );
 
-          signal:
-            abortControllerRef.current
-              .signal,
-        }
-      );
+  } finally {
+    setLoading(false);
+    abortControllerRef.current = null;
+  }
+};
 
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.reply ||
-            data.error ||
-            "Server error"
-        );
-      }
-
-      const botMessage = {
-        sender: "bot",
-        text:
-          data.reply ||
-          "No response generated.",
-      };
-
-      const finalMessages = [
-        ...updatedMessages,
-        botMessage,
-      ];
-
-      setMessages(finalMessages);
-
-      saveChat(
-        chatId,
-        finalMessages,
-        text || "Image chat"
-      );
-      } catch (error) {
-      console.error(error);
-
-      const errorMessage = {
-        sender: "bot",
-        text:
-          error.name === "AbortError"
-            ? "Generation stopped."
-            : "Sorry, I couldn't connect to the server.\n\n" +
-              error.message,
-      };
-
-      const finalMessages = [
-        ...updatedMessages,
-        errorMessage,
-      ];
-
-      setMessages(finalMessages);
-
-      saveChat(
-        chatId,
-        finalMessages,
-        text || "Image chat"
-      );
-    } finally {
-      setLoading(false);
-      abortControllerRef.current = null;
-    }
-  };
+    
 
   /* =========================
      REGENERATE
