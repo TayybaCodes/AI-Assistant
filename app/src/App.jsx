@@ -121,7 +121,7 @@ export function App() {
     setInput(transcript);
     voiceTextRef.current = transcript;
   }
-};
+
      
 
       setInput(transcript);
