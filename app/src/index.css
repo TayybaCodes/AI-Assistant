@@ -1492,3 +1492,30 @@ button {
     font-size: 25px;
   }
 }
+/* =========================
+   FIX CODE BLOCK DISPLAY
+========================= */
+
+.code-block code {
+  display: block;
+
+  padding: 0 !important;
+
+  margin: 0;
+
+  background: transparent !important;
+
+  color: inherit;
+
+  border-radius: 0;
+
+  font-size: inherit;
+
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  white-space: pre;
+}
