@@ -108,23 +108,21 @@ export function App() {
 
     recognition.lang = "en-US";
     recognition.continuous = false;
-    recognition.interimResults = true;
+    recognition.interimResults = false;
 
     recognition.onstart = () => {
       setListening(true);
     };
+     recognition.onresult = (event) => {
+  const transcript =
+    event.results[0][0].transcript.trim();
 
-    recognition.onresult = (event) => {
-      let transcript = "";
-
-      for (
-        let i = event.resultIndex;
-        i < event.results.length;
-        i++
-      ) {
-        transcript +=
-          event.results[i][0].transcript;
-      }
+  if (transcript) {
+    setInput(transcript);
+    voiceTextRef.current = transcript;
+  }
+};
+     
 
       setInput(transcript);
       voiceTextRef.current = transcript;
